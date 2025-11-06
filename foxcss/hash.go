@@ -1,4 +1,4 @@
-package goemo
+package foxcss
 
 import (
 	"github.com/cespare/xxhash/v2"

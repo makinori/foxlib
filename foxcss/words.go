@@ -1,6 +1,7 @@
-package goemo
+package foxcss
 
 // https://gist.github.com/borlaym/585e2e09dd6abd9b0d0a
+//
 // instead compiled my own with https://emojipedia.org/nature#list
 var AnimalWords = []string{
 	"Monkey",

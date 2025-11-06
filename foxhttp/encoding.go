@@ -1,4 +1,4 @@
-package emohttp
+package foxhttp
 
 import (
 	"bytes"

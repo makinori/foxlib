@@ -1,4 +1,4 @@
-package emocache
+package foxcache
 
 import (
 	"encoding/json"

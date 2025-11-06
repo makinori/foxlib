@@ -1,4 +1,4 @@
-package goemo
+package foxcss
 
 import (
 	"errors"

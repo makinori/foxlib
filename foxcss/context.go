@@ -1,4 +1,4 @@
-package goemo
+package foxcss
 
 import (
 	"context"
@@ -12,12 +12,12 @@ import (
 	"github.com/cespare/xxhash/v2"
 )
 
-type PageStylesKeyType string
-type HashWordsKeyType string
+type pageStylesKeyType string
+type hashWordsKeyType string
 
 var (
-	pageStylesKey PageStylesKeyType = "goemoPageStyles"
-	hashWordsKey  HashWordsKeyType  = "goemoHashWords"
+	pageStylesKey pageStylesKeyType = "foxcssPageStyles"
+	hashWordsKey  hashWordsKeyType  = "foxcssHashWords"
 )
 
 type pageStyle struct {
@@ -83,8 +83,8 @@ func UseWords(
 }
 
 // returns class name and injects scss into page
-func SCSS(ctx context.Context, snippet string) string {
-	if snippet == "" {
+func Class(ctx context.Context, scssSnippet string) string {
+	if scssSnippet == "" {
 		return ""
 	}
 
@@ -95,7 +95,7 @@ func SCSS(ctx context.Context, snippet string) string {
 	}
 
 	// TODO: snippet doesnt consider whitespace
-	var className = hashString(snippet)
+	var className = hashString(scssSnippet)
 
 	hashWords, hasHashWords := ctx.Value(hashWordsKey).(*hashWords)
 	if hasHashWords {
@@ -110,7 +110,7 @@ func SCSS(ctx context.Context, snippet string) string {
 
 	*pageStyles = append(*pageStyles, pageStyle{
 		ClassName:   className,
-		SnippetSCSS: snippet,
+		SnippetSCSS: scssSnippet,
 	})
 
 	return className

@@ -1,4 +1,4 @@
-package emocache
+package foxcache
 
 import (
 	"log/slog"
@@ -18,7 +18,7 @@ type Data[T any] struct {
 	Retrieve func() (T, error)
 }
 
-type DataInterface interface {
+type dataInterface interface {
 	init(c *cron.Cron)
 }
 
@@ -80,7 +80,7 @@ func (data *Data[T]) init(c *cron.Cron) {
 	// slog.Println("starting cron for " + cachedData.Key)
 }
 
-func Init(cacheDir string, dataInterfaces []DataInterface) {
+func Init(cacheDir string, dataInterfaces []dataInterface) {
 	currentCacheDir = cacheDir
 
 	c := cron.New()

@@ -1,4 +1,4 @@
-module github.com/makinori/goemo
+module github.com/makinori/foxlib
 
 go 1.25.3
 

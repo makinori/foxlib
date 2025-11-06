@@ -1,4 +1,4 @@
-package emohttp
+package foxhttp
 
 import (
 	"fmt"
@@ -134,8 +134,7 @@ func ServeOptimized(
 	w.Write(data)
 }
 
-// example usage:
-// emohttp.HandleFunc("GET /{file...}", goemo.FileServerOptimized(publicFS))
+// example usage: `http.HandleFunc("GET /{file...}", foxhttp.FileServerOptimized(publicFS))`
 func FileServerOptimized(fs fs.FS) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := r.PathValue("file")

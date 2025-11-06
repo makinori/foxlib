@@ -1,4 +1,4 @@
-package emohttp
+package foxhttp
 
 import (
 	_ "embed"
@@ -47,7 +47,7 @@ func NotABotDecode(query string) (notABot, error) {
 	return n, nil
 }
 
-// use with `http.HandleFunc("GET /notabot.gif", ...)`
+// use with `http.HandleFunc("GET /notabot.gif", foxhttp.HandleNotABotGif(...))`
 func HandleNotABotGif(
 	onRequest func(r *http.Request),
 ) func(w http.ResponseWriter, r *http.Request) {

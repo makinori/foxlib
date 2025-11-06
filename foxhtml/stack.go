@@ -1,10 +1,10 @@
-package emohtml
+package foxhtml
 
 import (
 	"context"
 	"io"
 
-	"github.com/makinori/goemo"
+	"github.com/makinori/foxlib/foxcss"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -19,7 +19,7 @@ func (_ StackSCSS) Render(_ io.Writer) error {
 func stack(
 	ctx context.Context, flexDir string, children ...Node,
 ) Node {
-	class := goemo.SCSS(ctx, `
+	class := foxcss.Class(ctx, `
 		display: flex;
 		flex-direction: `+flexDir+`;
 		gap: 8px;
@@ -28,7 +28,7 @@ func stack(
 	for _, node := range children {
 		switch scss := node.(type) {
 		case StackSCSS:
-			class += " " + goemo.SCSS(ctx, string(scss))
+			class += " " + foxcss.Class(ctx, string(scss))
 		}
 	}
 

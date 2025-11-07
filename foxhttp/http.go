@@ -135,13 +135,19 @@ func ServeOptimized(
 }
 
 // example usage: `http.HandleFunc("GET /{file...}", foxhttp.FileServerOptimized(publicFS))`
-func FileServerOptimized(fs fs.FS) func(http.ResponseWriter, *http.Request) {
+func FileServerOptimized(
+	fs fs.FS, notFoundHandler ...func(http.ResponseWriter, *http.Request),
+) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := r.PathValue("file")
 
 		file, err := fs.Open(filename)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
+			if len(notFoundHandler) > 0 {
+				notFoundHandler[0](w, r)
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+			}
 			return
 		}
 

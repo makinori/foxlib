@@ -18,7 +18,7 @@ type Data[T any] struct {
 	Retrieve func() (T, error)
 }
 
-type dataInterface interface {
+type DataInterface interface {
 	init(c *cron.Cron)
 }
 
@@ -80,7 +80,7 @@ func (data *Data[T]) init(c *cron.Cron) {
 	// slog.Println("starting cron for " + cachedData.Key)
 }
 
-func Init(cacheDir string, dataInterfaces []dataInterface) {
+func Init(cacheDir string, dataInterfaces []DataInterface) {
 	currentCacheDir = cacheDir
 
 	c := cron.New()

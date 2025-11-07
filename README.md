@@ -1,4 +1,4 @@
-# Foxlib <!--[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/makinori/goemo)-->
+# foxlib [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/makinori/foxlib)
 
 _not supposed to be a creative name. just like foxes_
 

@@ -26,6 +26,8 @@ var (
 	// go tool air proxy wont work if encoding
 	DisableContentEncodingForHTML = false
 
+	ReportWarnings = false
+
 	portRegexp = regexp.MustCompile(":[0-9]+$")
 )
 
@@ -126,10 +128,12 @@ func ServeOptimized(
 		return
 	}
 
-	slog.Warn(
-		"ineffecient compression!", "name", filename,
-		"type", contentType,
-	)
+	if ReportWarnings {
+		slog.Warn(
+			"ineffecient compression!", "name", filename,
+			"type", contentType,
+		)
+	}
 
 	w.Write(data)
 }

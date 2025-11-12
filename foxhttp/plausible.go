@@ -11,9 +11,7 @@ import (
 )
 
 var (
-	PlausibleDisable bool
 	PlausibleDebug   bool
-
 	PlausibleDomain  string
 	PlausibleBaseURL string
 
@@ -24,10 +22,6 @@ var (
 )
 
 func PlausibleEventFromNotABot(incomingReq *http.Request) bool {
-	if PlausibleDisable {
-		return false
-	}
-
 	if PlausibleDomain == "" || PlausibleBaseURL == "" {
 		slog.Error("plausible domain or base url not set")
 		return false

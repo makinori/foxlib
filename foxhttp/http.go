@@ -198,13 +198,18 @@ func FileServerOptimized(
 }
 
 func GetIPAddress(r *http.Request) string {
-	ipAddress := r.Header.Get("X-Forwarded-For")
-	if ipAddress != "" {
-		ipAddress = strings.Split(ipAddress, ",")[0]
-		ipAddress = strings.TrimSpace(ipAddress)
-	} else {
+	ipAddress := r.Header.Get("X-Real-IP")
+
+	if ipAddress == "" {
+		ipAddress = r.Header.Get("X-Forwarded-For")
+	}
+
+	if ipAddress == "" {
 		ipAddress = r.RemoteAddr
 	}
+
+	ipAddress = strings.Split(ipAddress, ",")[0]
+	ipAddress = strings.TrimSpace(ipAddress)
 
 	ipAddress = portRegexp.ReplaceAllString(ipAddress, "")
 

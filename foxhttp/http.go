@@ -1,6 +1,7 @@
 package foxhttp
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
@@ -10,16 +11,17 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
+	"time"
 
 	"github.com/cespare/xxhash/v2"
 )
 
-var ignoreEncoding = []string{
+var ignoreEncodingPrefixes = []string{
 	"image/png",
 	"image/jpg",
 	"image/jpeg",
+	"video/",
 }
 
 var (
@@ -44,15 +46,26 @@ func InCommaSeperated(commaSeparated string, needle string) bool {
 }
 
 func ServeOptimized(
-	w http.ResponseWriter, r *http.Request, data []byte,
-	filename string, allowCache bool,
+	w http.ResponseWriter, r *http.Request,
+	filename string, modTime time.Time, data []byte,
+	allowCache bool,
 ) {
 	// incase it was already set
 	contentType := w.Header().Get("Content-Type")
 
 	if allowCache {
+		// found in http.ServeContent
+		if !(modTime.IsZero() || modTime.Equal(time.Unix(0, 0))) {
+			w.Header().Set("Last-Modified", modTime.UTC().Format(http.TimeFormat))
+		}
+
 		// unset content type incase etag matches
 		w.Header().Del("Content-Type")
+
+		// this better be fast cause we're doing this for each request
+		// including ones that have Content-Range
+		// idk this is a dumb idea we should cache more
+		// but stateless uoohh
 
 		// etag := fmt.Sprintf(`W/"%x"`, xxhash.Sum64(data))
 		etag := fmt.Sprintf(`"%x"`, xxhash.Sum64(data))
@@ -89,11 +102,22 @@ func ServeOptimized(
 
 	// rest is encoding related
 
-	if slices.Contains(ignoreEncoding, contentType) ||
-		(DisableContentEncodingForHTML &&
-			strings.HasPrefix(contentType, "text/html")) {
+	disableContentEncoding := false
 
-		w.Write(data)
+	if DisableContentEncodingForHTML && strings.HasPrefix(contentType, "text/html") {
+		disableContentEncoding = true
+	} else {
+		for _, ignoreEncodingPrefix := range ignoreEncodingPrefixes {
+			if strings.HasPrefix(contentType, ignoreEncodingPrefix) {
+				disableContentEncoding = true
+				break
+			}
+		}
+
+	}
+
+	if disableContentEncoding {
+		http.ServeContent(w, r, filename, modTime, bytes.NewReader(data))
 		return
 	}
 
@@ -135,7 +159,8 @@ func ServeOptimized(
 		)
 	}
 
-	w.Write(data)
+	// w.Write(data)
+	http.ServeContent(w, r, filename, modTime, bytes.NewReader(data))
 }
 
 // example usage: `http.HandleFunc("GET /{file...}", foxhttp.FileServerOptimized(publicFS))`
@@ -155,6 +180,12 @@ func FileServerOptimized(
 			return
 		}
 
+		modTime := time.Unix(0, 0)
+		stat, err := file.Stat()
+		if err == nil {
+			modTime = stat.ModTime()
+		}
+
 		data, err := io.ReadAll(file)
 		if err != nil {
 			slog.Error("failed to read file", "err", err.Error())
@@ -162,7 +193,7 @@ func FileServerOptimized(
 			return
 		}
 
-		ServeOptimized(w, r, data, filename, true)
+		ServeOptimized(w, r, filename, modTime, data, true)
 	}
 }
 

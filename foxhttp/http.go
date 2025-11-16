@@ -137,18 +137,19 @@ func ServeOptimized(
 
 	if err != nil {
 		slog.Error("failed to encode", "name", filename, "err", err.Error())
-		w.Write(data)
+		http.ServeContent(w, r, filename, modTime, bytes.NewReader(data))
 		return
 	}
 
 	if contentEncoding == "" || len(compressed) == 0 {
-		w.Write(data)
+		http.ServeContent(w, r, filename, modTime, bytes.NewReader(data))
 		return
 	}
 
 	if len(compressed) < len(data) {
 		w.Header().Add("Content-Encoding", contentEncoding)
-		w.Write(compressed)
+		// w.Write()? or is this ok
+		http.ServeContent(w, r, filename, modTime, bytes.NewReader(compressed))
 		return
 	}
 
@@ -159,7 +160,6 @@ func ServeOptimized(
 		)
 	}
 
-	// w.Write(data)
 	http.ServeContent(w, r, filename, modTime, bytes.NewReader(data))
 }
 

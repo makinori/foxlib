@@ -8,10 +8,12 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/klauspost/compress v1.18.1 // zstd
 	github.com/robfig/cron/v3 v3.0.1
+	go.etcd.io/bbolt v1.4.3
 	maragu.dev/gomponents v1.2.0
 )
 
 require (
 	github.com/google/go-cmp v0.6.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 )

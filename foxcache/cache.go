@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
+
+	"go.etcd.io/bbolt"
 )
 
 var (
 	// to be set in the init function
-	currentCacheDir = ""
+	currentDB     *bbolt.DB
+	currentBucket []byte
 )
 
 type cacheData[T any] struct {
@@ -20,34 +22,45 @@ type cacheData[T any] struct {
 }
 
 func setCache[T any](key string, data cacheData[T]) error {
-	if currentCacheDir == "" {
-		return errors.New("cache dir not set")
+	if currentDB == nil {
+		return errors.New("database not set")
 	}
-
-	os.Mkdir(currentCacheDir, 0755)
 
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(
-		filepath.Join(currentCacheDir, key+".json"),
-		jsonBytes, 0644,
-	)
-	if err != nil {
-		return err
-	}
+	return currentDB.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(currentBucket)
+		if bucket == nil {
+			return errors.New("bucket not found")
+		}
 
-	return nil
+		return bucket.Put([]byte(key), jsonBytes)
+	})
 }
 
 func getCache[T any](key string) (*cacheData[T], error) {
-	if currentCacheDir == "" {
-		return nil, errors.New("cache dir not set")
+	if currentDB == nil {
+		return nil, errors.New("database not set")
 	}
 
-	bytes, err := os.ReadFile(filepath.Join(currentCacheDir, key+".json"))
+	var bytes []byte
+
+	err := currentDB.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(currentBucket)
+		if bucket == nil {
+			return errors.New("bucket not found")
+		}
+
+		found := bucket.Get([]byte(key))
+		bytes = make([]byte, len(found))
+		copy(bytes, found)
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}

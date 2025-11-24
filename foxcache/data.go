@@ -1,12 +1,14 @@
 package foxcache
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
+	"go.etcd.io/bbolt"
 )
 
 type Data[T any] struct {
@@ -80,20 +82,29 @@ func (data *Data[T]) init(c *cron.Cron) {
 	// slog.Println("starting cron for " + cachedData.Key)
 }
 
-func Init(cacheDir string, dataInterfaces []DataInterface) {
-	currentCacheDir = cacheDir
+func Init(db *bbolt.DB, bucket []byte, dataInterfaces []DataInterface) error {
+	currentDB = db
+	currentBucket = bucket
+
+	err := db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(bucket)
+		return err
+	})
+	if err != nil {
+		return errors.New("failed to make cache bucket: " + err.Error())
+	}
 
 	c := cron.New()
 
 	var wg sync.WaitGroup
-
 	for _, data := range dataInterfaces {
 		wg.Go(func() {
 			data.init(c)
 		})
 	}
-
 	wg.Wait()
 
 	c.Start()
+
+	return nil
 }

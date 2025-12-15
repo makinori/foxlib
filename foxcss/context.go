@@ -86,7 +86,8 @@ func UseWords(
 func classNameHash(data []byte) string {
 	hash64 := xxhash.Sum64(data)
 	hash32 := uint32(hash64>>32) ^ uint32(hash64)
-	return strconv.FormatUint(uint64(hash32), 36)
+	// c for class i suppose
+	return "c" + strconv.FormatUint(uint64(hash32), 36)
 }
 
 // returns class name and injects scss into page

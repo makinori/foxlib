@@ -22,6 +22,11 @@ var (
 	hashWordsKey  hashWordsKeyType  = "foxcssHashWords"
 )
 
+type pageStyles struct {
+	classMap *orderedmap.OrderedMap[string, string]
+	mutex    sync.Mutex
+}
+
 type hashWords struct {
 	available []string
 	cache     map[string]string
@@ -53,7 +58,10 @@ func (hashWords *hashWords) getWord(className string) string {
 func InitContext(parent context.Context) context.Context {
 	return context.WithValue(
 		parent, pageStylesKey,
-		orderedmap.NewOrderedMap[string, string](),
+		&pageStyles{
+			classMap: orderedmap.NewOrderedMap[string, string](),
+			mutex:    sync.Mutex{},
+		},
 	)
 }
 
@@ -97,7 +105,7 @@ func Class(ctx context.Context, scssSnippet string) string {
 
 	pageStyles, ok := ctx.Value(
 		pageStylesKey,
-	).(*orderedmap.OrderedMap[string, string])
+	).(*pageStyles)
 	if !ok {
 		slog.Error("failed to get page scss from context")
 		return ""
@@ -111,11 +119,14 @@ func Class(ctx context.Context, scssSnippet string) string {
 		className = hashWords.getWord(className)
 	}
 
-	if pageStyles.Has(className) {
+	pageStyles.mutex.Lock()
+	defer pageStyles.mutex.Unlock()
+
+	if pageStyles.classMap.Has(className) {
 		return className
 	}
 
-	pageStyles.Set(className, scssSnippet)
+	pageStyles.classMap.Set(className, scssSnippet)
 
 	return className
 }
@@ -123,7 +134,7 @@ func Class(ctx context.Context, scssSnippet string) string {
 func GetPageSCSS(ctx context.Context) string {
 	pageStyles, ok := ctx.Value(
 		pageStylesKey,
-	).(*orderedmap.OrderedMap[string, string])
+	).(*pageStyles)
 	if !ok {
 		slog.Error("failed to get page scss from context")
 		return ""
@@ -131,7 +142,8 @@ func GetPageSCSS(ctx context.Context) string {
 
 	var source string
 
-	for style := pageStyles.Front(); style != nil; style = style.Next() {
+	classMap := pageStyles.classMap
+	for style := classMap.Front(); style != nil; style = style.Next() {
 		source += "." + style.Key + "{" + style.Value + "}"
 	}
 

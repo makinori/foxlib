@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"unsafe"
@@ -21,8 +22,8 @@ var (
 )
 
 type pageStyle struct {
-	ClassName   string
-	SnippetSCSS string
+	className   string
+	snippetSCSS string
 }
 
 type hashWords struct {
@@ -82,6 +83,12 @@ func UseWords(
 	return context.WithValue(parent, hashWordsKey, &hashWords)
 }
 
+func classNameHash(data []byte) string {
+	hash64 := xxhash.Sum64(data)
+	hash32 := uint32(hash64>>32) ^ uint32(hash64)
+	return strconv.FormatUint(uint64(hash32), 36)
+}
+
 // returns class name and injects scss into page
 func Class(ctx context.Context, scssSnippet string) string {
 	if scssSnippet == "" {
@@ -94,8 +101,8 @@ func Class(ctx context.Context, scssSnippet string) string {
 		return ""
 	}
 
-	// TODO: snippet doesnt consider whitespace
-	var className = hashString(scssSnippet)
+	// TODO: hash doesnt consider whitespace
+	var className = classNameHash([]byte(scssSnippet))
 
 	hashWords, hasHashWords := ctx.Value(hashWordsKey).(*hashWords)
 	if hasHashWords {
@@ -103,14 +110,14 @@ func Class(ctx context.Context, scssSnippet string) string {
 	}
 
 	for _, style := range *pageStyles {
-		if style.ClassName == className {
+		if style.className == className {
 			return className
 		}
 	}
 
 	*pageStyles = append(*pageStyles, pageStyle{
-		ClassName:   className,
-		SnippetSCSS: scssSnippet,
+		className:   className,
+		snippetSCSS: scssSnippet,
 	})
 
 	return className
@@ -126,7 +133,7 @@ func GetPageSCSS(ctx context.Context) string {
 	var source string
 
 	for _, scss := range *pageStyles {
-		source += "." + scss.ClassName + "{" + scss.SnippetSCSS + "}"
+		source += "." + scss.className + "{" + scss.snippetSCSS + "}"
 	}
 
 	source = strings.TrimSpace(source)

@@ -11,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/cespare/xxhash/v2"
+	"github.com/elliotchance/orderedmap/v3"
 )
 
 type pageStylesKeyType string
@@ -20,11 +21,6 @@ var (
 	pageStylesKey pageStylesKeyType = "foxcssPageStyles"
 	hashWordsKey  hashWordsKeyType  = "foxcssHashWords"
 )
-
-type pageStyle struct {
-	className   string
-	snippetSCSS string
-}
 
 type hashWords struct {
 	available []string
@@ -55,7 +51,10 @@ func (hashWords *hashWords) getWord(className string) string {
 }
 
 func InitContext(parent context.Context) context.Context {
-	return context.WithValue(parent, pageStylesKey, &[]pageStyle{})
+	return context.WithValue(
+		parent, pageStylesKey,
+		orderedmap.NewOrderedMap[string, string](),
+	)
 }
 
 func UseWords(
@@ -96,7 +95,9 @@ func Class(ctx context.Context, scssSnippet string) string {
 		return ""
 	}
 
-	pageStyles, ok := ctx.Value(pageStylesKey).(*[]pageStyle)
+	pageStyles, ok := ctx.Value(
+		pageStylesKey,
+	).(*orderedmap.OrderedMap[string, string])
 	if !ok {
 		slog.Error("failed to get page scss from context")
 		return ""
@@ -110,22 +111,19 @@ func Class(ctx context.Context, scssSnippet string) string {
 		className = hashWords.getWord(className)
 	}
 
-	for _, style := range *pageStyles {
-		if style.className == className {
-			return className
-		}
+	if pageStyles.Has(className) {
+		return className
 	}
 
-	*pageStyles = append(*pageStyles, pageStyle{
-		className:   className,
-		snippetSCSS: scssSnippet,
-	})
+	pageStyles.Set(className, scssSnippet)
 
 	return className
 }
 
 func GetPageSCSS(ctx context.Context) string {
-	pageStyles, ok := ctx.Value(pageStylesKey).(*[]pageStyle)
+	pageStyles, ok := ctx.Value(
+		pageStylesKey,
+	).(*orderedmap.OrderedMap[string, string])
 	if !ok {
 		slog.Error("failed to get page scss from context")
 		return ""
@@ -133,8 +131,8 @@ func GetPageSCSS(ctx context.Context) string {
 
 	var source string
 
-	for _, scss := range *pageStyles {
-		source += "." + scss.className + "{" + scss.snippetSCSS + "}"
+	for style := pageStyles.Front(); style != nil; style = style.Next() {
+		source += "." + style.Key + "{" + style.Value + "}"
 	}
 
 	source = strings.TrimSpace(source)

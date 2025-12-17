@@ -1,3 +1,6 @@
+# only run your servers in shell-less environments
+# https://mastodon.hotmilk.space/@maki/115690185193300470
+
 FROM ghcr.io/dart-musl/dart:latest AS dart
 
 ARG BUF_VERSION=1.61.0

@@ -22,5 +22,8 @@ rm -rf /root/.cache /root/.dart-tool /root/.pub-cache /dart-sass
 
 FROM scratch
 
+WORKDIR /
+ENV PATH=/:$PATH
+
 COPY --from=dart /lib/ld-musl-*.so.1 /lib/
 COPY --from=dart /sass /

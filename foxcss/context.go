@@ -62,7 +62,7 @@ func InitContext(ctx context.Context, classPrefix string) context.Context {
 		&pageStyles{
 			classMap:    orderedmap.NewOrderedMap[string, string](),
 			mutex:       sync.Mutex{},
-			classPrefix: "",
+			classPrefix: classPrefix,
 		},
 	)
 }

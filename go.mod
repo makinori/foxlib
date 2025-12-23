@@ -7,14 +7,15 @@ require (
 	github.com/bep/godartsass/v2 v2.5.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elliotchance/orderedmap/v3 v3.1.0
-	github.com/klauspost/compress v1.18.1 // zstd
+	github.com/klauspost/compress v1.18.2 // zstd
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/wordgen/wordlists/eff v0.3.0
 	go.etcd.io/bbolt v1.4.3
 	maragu.dev/gomponents v1.2.0
 )
 
 require (
-	github.com/google/go-cmp v0.6.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	google.golang.org/protobuf v1.35.2 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )

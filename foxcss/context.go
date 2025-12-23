@@ -2,6 +2,7 @@ package foxcss
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"math/rand"
 	"slices"
@@ -15,22 +16,22 @@ import (
 )
 
 type pageStylesKeyType string
-type hashWordsKeyType string
 
 var (
 	pageStylesKey pageStylesKeyType = "foxcssPageStyles"
-	hashWordsKey  hashWordsKeyType  = "foxcssHashWords"
 )
-
-type pageStyles struct {
-	classMap *orderedmap.OrderedMap[string, string]
-	mutex    sync.Mutex
-}
 
 type hashWords struct {
 	available []string
 	cache     map[string]string
 	mutex     sync.Mutex
+}
+
+type pageStyles struct {
+	classMap    *orderedmap.OrderedMap[string, string]
+	mutex       sync.Mutex
+	hashWords   *hashWords
+	classPrefix string
 }
 
 func (hashWords *hashWords) getWord(className string) string {
@@ -55,20 +56,28 @@ func (hashWords *hashWords) getWord(className string) string {
 	return word
 }
 
-func InitContext(parent context.Context) context.Context {
+func InitContext(ctx context.Context, classPrefix string) context.Context {
 	return context.WithValue(
-		parent, pageStylesKey,
+		ctx, pageStylesKey,
 		&pageStyles{
-			classMap: orderedmap.NewOrderedMap[string, string](),
-			mutex:    sync.Mutex{},
+			classMap:    orderedmap.NewOrderedMap[string, string](),
+			mutex:       sync.Mutex{},
+			classPrefix: "",
 		},
 	)
 }
 
 func UseWords(
-	parent context.Context, words []string, seed string,
-) context.Context {
-	hashWords := hashWords{
+	ctx context.Context, words []string, seed string,
+) error {
+	pageStyles, ok := ctx.Value(
+		pageStylesKey,
+	).(*pageStyles)
+	if !ok {
+		return errors.New("page styles not found in context")
+	}
+
+	pageStyles.hashWords = &hashWords{
 		cache: map[string]string{},
 		mutex: sync.Mutex{},
 	}
@@ -82,19 +91,21 @@ func UseWords(
 		word = strings.ToLower(word)
 		word = strings.ReplaceAll(word, " ", "-")
 
-		if !slices.Contains(hashWords.available, word) {
-			hashWords.available = append(hashWords.available, word)
+		if !slices.Contains(pageStyles.hashWords.available, word) {
+			pageStyles.hashWords.available = append(
+				pageStyles.hashWords.available, word,
+			)
 		}
 	}
 
-	return context.WithValue(parent, hashWordsKey, &hashWords)
+	return nil
 }
 
+// need to still prefix with a-z
 func classNameHash(data []byte) string {
 	hash64 := xxhash.Sum64(data)
 	hash32 := uint32(hash64>>32) ^ uint32(hash64)
-	// c for class i suppose
-	return "c" + strconv.FormatUint(uint64(hash32), 36)
+	return strconv.FormatUint(uint64(hash32), 36)
 }
 
 // returns class name and injects scss into page
@@ -107,16 +118,24 @@ func Class(ctx context.Context, scssSnippet string) string {
 		pageStylesKey,
 	).(*pageStyles)
 	if !ok {
-		slog.Error("failed to get page scss from context")
+		slog.Error("failed to get page styles from context")
 		return ""
 	}
 
 	// TODO: hash doesnt consider whitespace
 	var className = classNameHash([]byte(scssSnippet))
 
-	hashWords, hasHashWords := ctx.Value(hashWordsKey).(*hashWords)
-	if hasHashWords {
-		className = hashWords.getWord(className)
+	if pageStyles.hashWords != nil {
+		className = pageStyles.hashWords.getWord(className)
+	}
+
+	if pageStyles.classPrefix == "" {
+		if pageStyles.hashWords == nil {
+			// c for class
+			className = "c" + className
+		}
+	} else {
+		className = pageStyles.classPrefix + className
 	}
 
 	pageStyles.mutex.Lock()

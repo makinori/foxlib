@@ -108,9 +108,9 @@ func classNameHash(data []byte) string {
 	return strconv.FormatUint(uint64(hash32), 36)
 }
 
-// returns class name and injects scss into page
-func Class(ctx context.Context, scssSnippet string) string {
-	if scssSnippet == "" {
+// returns class name and injects snipper into page styles
+func Class(ctx context.Context, snippet string) string {
+	if snippet == "" {
 		return ""
 	}
 
@@ -122,8 +122,8 @@ func Class(ctx context.Context, scssSnippet string) string {
 		return ""
 	}
 
-	// TODO: hash doesnt consider whitespace
-	var className = classNameHash([]byte(scssSnippet))
+	css := preprocess(snippet)
+	var className = classNameHash([]byte(css))
 
 	if pageStyles.hashWords != nil {
 		className = pageStyles.hashWords.getWord(className)
@@ -145,28 +145,26 @@ func Class(ctx context.Context, scssSnippet string) string {
 		return className
 	}
 
-	pageStyles.classMap.Set(className, scssSnippet)
+	pageStyles.classMap.Set(className, css)
 
 	return className
 }
 
-func GetPageSCSS(ctx context.Context) string {
+func GetPageCSS(ctx context.Context) string {
 	pageStyles, ok := ctx.Value(
 		pageStylesKey,
 	).(*pageStyles)
 	if !ok {
-		slog.Error("failed to get page scss from context")
+		slog.Error("failed to get page css from context")
 		return ""
 	}
 
-	var source string
+	var css string
 
 	classMap := pageStyles.classMap
 	for style := classMap.Front(); style != nil; style = style.Next() {
-		source += "." + style.Key + "{" + style.Value + "}"
+		css += strings.ReplaceAll(style.Value, "&", "."+style.Key)
 	}
 
-	source = strings.TrimSpace(source)
-
-	return source
+	return css
 }

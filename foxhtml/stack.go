@@ -9,10 +9,10 @@ import (
 	. "maragu.dev/gomponents/html"
 )
 
-// nice! if only we can do this for goemo itself lol
-type StackSCSS string
+// nice! if only we can do this from foxcss itself lol
+type StackCSS string
 
-func (_ StackSCSS) Render(_ io.Writer) error {
+func (_ StackCSS) Render(_ io.Writer) error {
 	return nil
 }
 
@@ -26,9 +26,9 @@ func stack(
 	`)
 
 	for _, node := range children {
-		switch scss := node.(type) {
-		case StackSCSS:
-			class += " " + foxcss.Class(ctx, string(scss))
+		switch css := node.(type) {
+		case StackCSS:
+			class += " " + foxcss.Class(ctx, string(css))
 		}
 	}
 

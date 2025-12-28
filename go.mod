@@ -4,7 +4,6 @@ go 1.25.3
 
 require (
 	github.com/andybalholm/brotli v1.2.0
-	github.com/bep/godartsass/v2 v2.5.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elliotchance/orderedmap/v3 v3.1.0
 	github.com/klauspost/compress v1.18.2 // zstd
@@ -14,7 +13,4 @@ require (
 	maragu.dev/gomponents v1.2.0
 )
 
-require (
-	golang.org/x/sys v0.39.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
-)
+require golang.org/x/sys v0.39.0 // indirect

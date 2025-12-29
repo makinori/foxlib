@@ -24,21 +24,25 @@ var (
 type hashWords struct {
 	available []string
 	cache     map[string]string
-	mutex     sync.Mutex
+	mutex     sync.RWMutex
 }
 
 type pageStyles struct {
 	classMap    *orderedmap.OrderedMap[string, string]
-	mutex       sync.Mutex
+	mutex       sync.RWMutex
 	hashWords   *hashWords
 	classPrefix string
 }
 
-func (hashWords *hashWords) getWord(className string) string {
-	hashWords.mutex.Lock()
-	defer hashWords.mutex.Unlock()
-
+func (hashWords *hashWords) getCacheSafe(className string) (string, bool) {
+	hashWords.mutex.RLock()
+	defer hashWords.mutex.RUnlock()
 	word, ok := hashWords.cache[className]
+	return word, ok
+}
+
+func (hashWords *hashWords) getWord(className string) string {
+	word, ok := hashWords.getCacheSafe(className)
 	if ok {
 		return word
 	}
@@ -51,8 +55,10 @@ func (hashWords *hashWords) getWord(className string) string {
 	word = hashWords.available[i]
 
 	hashWords.available = slices.Delete(hashWords.available, i, i+1)
-	hashWords.cache[className] = word
 
+	hashWords.mutex.Lock()
+	defer hashWords.mutex.Unlock()
+	hashWords.cache[className] = word
 	return word
 }
 
@@ -61,7 +67,7 @@ func InitContext(ctx context.Context, classPrefix string) context.Context {
 		ctx, pageStylesKey,
 		&pageStyles{
 			classMap:    orderedmap.NewOrderedMap[string, string](),
-			mutex:       sync.Mutex{},
+			mutex:       sync.RWMutex{},
 			classPrefix: classPrefix,
 		},
 	)
@@ -79,7 +85,7 @@ func UseWords(
 
 	pageStyles.hashWords = &hashWords{
 		cache: map[string]string{},
-		mutex: sync.Mutex{},
+		mutex: sync.RWMutex{},
 	}
 
 	for _, word := range words {
@@ -101,11 +107,31 @@ func UseWords(
 	return nil
 }
 
-// need to still prefix with a-z
-func classNameHash(data []byte) string {
-	hash64 := xxhash.Sum64(data)
+func (pageStyles *pageStyles) getClassName(snippet string) string {
+	hash64 := xxhash.Sum64([]byte(snippet))
 	hash32 := uint32(hash64>>32) ^ uint32(hash64)
-	return strconv.FormatUint(uint64(hash32), 36)
+	className := strconv.FormatUint(uint64(hash32), 36)
+
+	if pageStyles.hashWords != nil {
+		className = pageStyles.hashWords.getWord(className)
+	}
+
+	if pageStyles.classPrefix == "" {
+		if pageStyles.hashWords == nil {
+			// c for class
+			className = "c" + className
+		}
+	} else {
+		className = pageStyles.classPrefix + className
+	}
+
+	return className
+}
+
+func (pageStyles *pageStyles) hasClassNameSafe(className string) bool {
+	pageStyles.mutex.RLock()
+	defer pageStyles.mutex.RUnlock()
+	return pageStyles.classMap.Has(className)
 }
 
 // returns class name and injects snippet into page styles
@@ -122,29 +148,15 @@ func Class(ctx context.Context, snippet string) string {
 		return ""
 	}
 
-	var className = classNameHash([]byte(snippet))
-	if pageStyles.hashWords != nil {
-		className = pageStyles.hashWords.getWord(className)
-	}
+	className := pageStyles.getClassName(snippet)
 
-	if pageStyles.classPrefix == "" {
-		if pageStyles.hashWords == nil {
-			// c for class
-			className = "c" + className
-		}
-	} else {
-		className = pageStyles.classPrefix + className
+	if pageStyles.hasClassNameSafe(className) {
+		return className
 	}
 
 	pageStyles.mutex.Lock()
 	defer pageStyles.mutex.Unlock()
-
-	if pageStyles.classMap.Has(className) {
-		return className
-	}
-
 	pageStyles.classMap.Set(className, preprocess(snippet))
-
 	return className
 }
 

@@ -108,7 +108,7 @@ func classNameHash(data []byte) string {
 	return strconv.FormatUint(uint64(hash32), 36)
 }
 
-// returns class name and injects snipper into page styles
+// returns class name and injects snippet into page styles
 func Class(ctx context.Context, snippet string) string {
 	if snippet == "" {
 		return ""
@@ -122,9 +122,7 @@ func Class(ctx context.Context, snippet string) string {
 		return ""
 	}
 
-	css := preprocess(snippet)
-	var className = classNameHash([]byte(css))
-
+	var className = classNameHash([]byte(snippet))
 	if pageStyles.hashWords != nil {
 		className = pageStyles.hashWords.getWord(className)
 	}
@@ -145,7 +143,7 @@ func Class(ctx context.Context, snippet string) string {
 		return className
 	}
 
-	pageStyles.classMap.Set(className, css)
+	pageStyles.classMap.Set(className, preprocess(snippet))
 
 	return className
 }

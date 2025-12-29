@@ -32,13 +32,12 @@ func preprocess(input string) (css string) {
 		}
 
 		// each css rule
-		if !strings.HasSuffix(line, "}") && !strings.HasSuffix(line, "{") {
+		if !strings.HasSuffix(line, "}") && !strings.HasSuffix(line, "{") &&
+			!strings.HasSuffix(line, ":") && !strings.HasSuffix(line, ",") {
 			// make sure ends with semicolon
 			if !strings.HasSuffix(line, ";") {
 				line += ";"
 			}
-			// make a little shorter
-			line = strings.ReplaceAll(line, ": ", ":")
 		}
 
 		css += line
